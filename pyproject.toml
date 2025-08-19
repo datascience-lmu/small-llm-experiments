@@ -1,0 +1,23 @@
+[project]
+name = "small-llm-experiments"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "accelerate>=1.10.0",
+    "bitsandbytes>=0.47.0",
+    "polars>=1.32.3",
+    "torch>=2.8.0",
+    "transformers>=4.55.2",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.30.1",
+    "ipywidgets>=8.1.7",
+]
+
+[tool.basedpyright]
+typeCheckingMode = "basic"
+reportUnknownMemberType = false
