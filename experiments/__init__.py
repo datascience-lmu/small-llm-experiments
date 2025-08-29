@@ -242,7 +242,7 @@ class GPTChatbot:
 
         response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
 
-        # self.history.append({"role": "user", "content": user_input})
-        # self.history.append({"role": "assistant", "content": response})
+        self.history.append({"role": "user", "content": user_input})
+        self.history.append({"role": "assistant", "content": response})
 
         return response
