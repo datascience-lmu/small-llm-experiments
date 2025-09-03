@@ -125,7 +125,7 @@ class SmolChatbot:
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt").to_device(self.model.device)
+        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
             len(inputs.input_ids[0]) :
         ].tolist()
@@ -178,7 +178,7 @@ class QwenChatbot:
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt").to_device(self.model.device)
+        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
             len(inputs.input_ids[0]) :
         ].tolist()
@@ -231,7 +231,7 @@ class GPTChatbot:
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt").to_device(self.model.device)
+        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
             len(inputs.input_ids[0]) :
         ].tolist()

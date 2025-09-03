@@ -77,6 +77,8 @@ def stuff():
 
     qwen = experiments.QwenChatbot()
 
+    print(qwen("Hello"))
+
 
 if __name__ == "__main__":
     cli()
