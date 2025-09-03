@@ -28,22 +28,44 @@ def list(max_digits: int, max_words: int, samples: int):
     logger.info("Loading model")
 
     qwen = experiments.QwenChatbot()
-    experiments.list_test(qwen, max_digits, max_words, samples)
+    experiments.list_test(qwen, max_digits, max_words, samples, False)
     del qwen
     gc.collect()
 
     qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-14B")
-    experiments.list_test(qwen, max_digits, max_words, samples)
+    experiments.list_test(qwen, max_digits, max_words, samples, False)
     del qwen
     gc.collect()
 
     gpt = experiments.GPTChatbot()
-    experiments.list_test(gpt, max_digits, max_words, samples)
+    experiments.list_test(gpt, max_digits, max_words, samples, False)
     del gpt
     gc.collect()
 
     smol = experiments.SmolChatbot()
-    experiments.list_test(smol, max_digits, max_words, samples)
+    experiments.list_test(smol, max_digits, max_words, samples, False)
+    del smol
+    gc.collect()
+
+    # ---
+
+    qwen = experiments.QwenChatbot()
+    experiments.list_test(qwen, max_digits, max_words, samples, True)
+    del qwen
+    gc.collect()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-14B")
+    experiments.list_test(qwen, max_digits, max_words, samples, True)
+    del qwen
+    gc.collect()
+
+    gpt = experiments.GPTChatbot()
+    experiments.list_test(gpt, max_digits, max_words, samples, True)
+    del gpt
+    gc.collect()
+
+    smol = experiments.SmolChatbot()
+    experiments.list_test(smol, max_digits, max_words, samples, True)
     del smol
     gc.collect()
 
