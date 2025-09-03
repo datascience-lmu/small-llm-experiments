@@ -29,8 +29,22 @@ def list(max_digits: int, max_words: int, samples: int):
 
     qwen = experiments.QwenChatbot()
     experiments.list_test(qwen, max_digits, max_words, samples)
-
     del qwen
+    gc.collect()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-14B")
+    experiments.list_test(qwen, max_digits, max_words, samples)
+    del qwen
+    gc.collect()
+
+    gpt = experiments.GPTChatbot()
+    experiments.list_test(gpt, max_digits, max_words, samples)
+    del gpt
+    gc.collect()
+
+    smol = experiments.SmolChatbot()
+    experiments.list_test(smol, max_digits, max_words, samples)
+    del smol
     gc.collect()
 
 

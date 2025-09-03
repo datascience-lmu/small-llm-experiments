@@ -112,6 +112,10 @@ class Chatbot(ABC):
     def __call__(self, user_input: str, enable_thinking=True) -> str:
         pass
 
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
 
 class SmolChatbot(Chatbot):
     def __init__(
@@ -120,6 +124,7 @@ class SmolChatbot(Chatbot):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
+        self.name = "".join(x for x in model_name if x.isalnum())
         self.history: list[dict[str, str]] = []
         logger.debug(f"Loaded on device {self.model.device}")
 
@@ -161,12 +166,16 @@ class SmolChatbot(Chatbot):
 
         return content
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class QwenChatbot(Chatbot):
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
+        self.name = "".join(x for x in model_name if x.isalnum())
         self.history: list[dict[str, str]] = []
         logger.debug(f"Loaded on device {self.model.device}")
 
@@ -208,12 +217,16 @@ class QwenChatbot(Chatbot):
 
         return content
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class GPTChatbot(Chatbot):
     def __init__(self, model_name: str = "openai/gpt-oss-20b", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
+        self.name = "".join(x for x in model_name if x.isalnum())
         self.history: list[dict[str, str]] = []
         logger.debug(f"Loaded on device {self.model.device}")
 
@@ -255,8 +268,13 @@ class GPTChatbot(Chatbot):
 
         return response
 
+    def __str__(self) -> str:
+        return self.name
 
-def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
+
+def list_test(
+    model: Chatbot, max_digits: int, max_words: int, samples: int, enable_thinking=False
+):
     """Experiment to test if llm's can sort lists"""
     import itertools
     import time
@@ -267,6 +285,7 @@ def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
     iter = itertools.product(range(1, max_digits + 1), range(1, max_words + 1))
 
     res = {
+        "thinking": [],
         "number of digits": [],
         "number of words": [],
         "success count": [],
@@ -275,7 +294,13 @@ def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
 
     logger.info(f"Running experiment with {model}")
 
-    filename = "results/list--" + time.strftime("%y-%m-%d--%H-%M-%S") + ".parquet"
+    filename = (
+        "results/list--"
+        + str(model)
+        + "--"
+        + time.strftime("%y-%m-%d--%H-%M-%S")
+        + ".csv"
+    )
 
     for number_of_digits, number_of_words in iter:
         success_count = 0
@@ -288,7 +313,7 @@ def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
             model.reset()
             response = model(
                 prompt,
-                enable_thinking=False,
+                enable_thinking=enable_thinking,
             )
 
             if experiments.check_response_contains_expected(response, expected):
@@ -296,6 +321,7 @@ def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
             else:
                 fail_count += 1
 
+        res["thinking"].append(enable_thinking)
         res["number of digits"].append(number_of_digits)
         res["number of words"].append(number_of_words)
         res["success count"].append(success_count)
@@ -304,7 +330,7 @@ def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
         dataset = pl.DataFrame(res)
         Path("results").mkdir(parents=True, exist_ok=True)
         # Potential data corruption if program is cancelled during this
-        dataset.write_parquet(filename)
+        dataset.write_csv(filename)
 
         logger.info(f"Finished {number_of_digits} digits, {number_of_words} words")
 
