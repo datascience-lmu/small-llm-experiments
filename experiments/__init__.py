@@ -1,13 +1,16 @@
 from copy import deepcopy
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 import itertools
+import logging
 import random
 import string
 import math
 import ast
 import re
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def add_characters(input: str, char: str = "x") -> str:
     return "".join(
@@ -97,9 +100,11 @@ class SmolChatbot:
     def __init__(
         self, model_name: str = "HuggingFaceTB/SmolLM3-3B", system_prompt: str = ""
     ):
+        logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name)
         self.history: list[dict[str, str]] = []
+        logger.debug(f"Loaded on device {self.model.device}")
 
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
@@ -148,9 +153,11 @@ class SmolChatbot:
 
 class QwenChatbot:
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B", system_prompt: str = ""):
+        logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name)
         self.history: list[dict[str, str]] = []
+        logger.debug(f"Loaded on device {self.model.device}")
 
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
@@ -199,9 +206,11 @@ class QwenChatbot:
 
 class GPTChatbot:
     def __init__(self, model_name: str = "openai/gpt-oss-20b", system_prompt: str = ""):
+        logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
         self.history: list[dict[str, str]] = []
+        logger.debug(f"Loaded on device {self.model.device}")
 
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
