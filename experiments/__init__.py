@@ -102,7 +102,7 @@ class SmolChatbot:
     ):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
         self.history: list[dict[str, str]] = []
         logger.debug(f"Loaded on device {self.model.device}")
 
@@ -125,7 +125,7 @@ class SmolChatbot:
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt")
+        inputs = self.tokenizer(text, return_tensors="pt").to_device(self.model.device)
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
             len(inputs.input_ids[0]) :
         ].tolist()
@@ -155,7 +155,7 @@ class QwenChatbot:
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
         self.history: list[dict[str, str]] = []
         logger.debug(f"Loaded on device {self.model.device}")
 
@@ -178,7 +178,7 @@ class QwenChatbot:
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt")
+        inputs = self.tokenizer(text, return_tensors="pt").to_device(self.model.device)
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
             len(inputs.input_ids[0]) :
         ].tolist()
@@ -231,7 +231,7 @@ class GPTChatbot:
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt")
+        inputs = self.tokenizer(text, return_tensors="pt").to_device(self.model.device)
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
             len(inputs.input_ids[0]) :
         ].tolist()
