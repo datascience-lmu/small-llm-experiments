@@ -23,61 +23,24 @@ def list(max_digits: int, max_words: int, samples: int):
     import experiments
     import polars as pl
 
+    import gc
+
     logger.info("Loading model")
+
     qwen = experiments.QwenChatbot()
+    experiments.list_test(qwen, max_digits, max_words, samples)
 
-    iter = itertools.product(range(1, max_digits + 1), range(1, max_words + 1))
-
-    res = {
-        "number of digits": [],
-        "number of words": [],
-        "success count": [],
-        "fail count": [],
-    }
-
-    logger.info("Running experiment")
-
-    filename = "results/list--" + time.strftime("%y-%m-%d--%H-%M-%S") + ".parquet"
-
-    with click.progressbar(iter, length=max_digits * max_words, show_pos=True) as bar:
-        for number_of_digits, number_of_words in bar:
-            success_count = 0
-            fail_count = 0
-            for _ in range(samples):
-                prompt, expected = experiments.generate_list_prompt(
-                    number_of_words, number_of_digits
-                )
-
-                qwen.reset()
-                response = qwen(
-                    prompt,
-                    enable_thinking=False,
-                )
-
-                if experiments.check_response_contains_expected(response, expected):
-                    success_count += 1
-                else:
-                    fail_count += 1
-
-            res["number of digits"].append(number_of_digits)
-            res["number of words"].append(number_of_words)
-            res["success count"].append(success_count)
-            res["fail count"].append(fail_count)
-
-            dataset = pl.DataFrame(res)
-            # Potential data corruption if program is cancelled during this
-            dataset.write_parquet(filename)
-
-    logger.info(dataset)
+    del qwen
+    gc.collect()
 
 
 @cli.command()
 def stuff():
     import experiments
 
-    gpt = experiments.GPTChatbot()
+    qwen = experiments.QwenChatbot()
 
-    print(gpt("Hello"))
+    print(qwen("Hello"))
 
 
 if __name__ == "__main__":

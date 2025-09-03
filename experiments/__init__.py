@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import override
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 import itertools
@@ -9,8 +10,11 @@ import math
 import ast
 import re
 
+from abc import ABC, abstractmethod
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 def add_characters(input: str, char: str = "x") -> str:
     return "".join(
@@ -87,7 +91,7 @@ def extract_list_from_response(response: str) -> list[int] | None:
     if len(occurrences) != 0:
         last = occurrences[-1]
         maybe_list = ast.literal_eval(last)
-        if type(maybe_list) == list:
+        if type(maybe_list) is list:
             return maybe_list
 
 
@@ -96,7 +100,19 @@ def check_response_contains_expected(response: str, expected: list[int]) -> bool
     return extracted == expected
 
 
-class SmolChatbot:
+class Chatbot(ABC):
+    def reset(self, system_prompt: str = ""):
+        self.history = []
+
+        if system_prompt:
+            self.history.append({"role": "system", "content": system_prompt})
+
+    @abstractmethod
+    def __call__(self, user_input: str, enable_thinking=True) -> str:
+        pass
+
+
+class SmolChatbot(Chatbot):
     def __init__(
         self, model_name: str = "HuggingFaceTB/SmolLM3-3B", system_prompt: str = ""
     ):
@@ -109,13 +125,7 @@ class SmolChatbot:
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
 
-    def reset(self, system_prompt: str = ""):
-        self.history = []
-
-        if system_prompt:
-            self.history.append({"role": "system", "content": system_prompt})
-
-    def __call__(self, user_input: str, enable_thinking=True):
+    def __call__(self, user_input: str, enable_thinking=True) -> str:
         messages = self.history + [{"role": "user", "content": user_input}]
 
         text = self.tokenizer.apply_chat_template(
@@ -151,7 +161,7 @@ class SmolChatbot:
         return content
 
 
-class QwenChatbot:
+class QwenChatbot(Chatbot):
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -162,13 +172,7 @@ class QwenChatbot:
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
 
-    def reset(self, system_prompt: str = ""):
-        self.history = []
-
-        if system_prompt:
-            self.history.append({"role": "system", "content": system_prompt})
-
-    def __call__(self, user_input: str, enable_thinking=True):
+    def __call__(self, user_input: str, enable_thinking=True) -> str:
         messages = self.history + [{"role": "user", "content": user_input}]
 
         text = self.tokenizer.apply_chat_template(
@@ -204,7 +208,7 @@ class QwenChatbot:
         return content
 
 
-class GPTChatbot:
+class GPTChatbot(Chatbot):
     def __init__(self, model_name: str = "openai/gpt-oss-20b", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -215,13 +219,7 @@ class GPTChatbot:
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
 
-    def reset(self, system_prompt: str = ""):
-        self.history = []
-
-        if system_prompt:
-            self.history.append({"role": "system", "content": system_prompt})
-
-    def __call__(self, user_input: str, enable_thinking=True):
+    def __call__(self, user_input: str, enable_thinking=True) -> str:
         messages = self.history + [{"role": "user", "content": user_input}]
 
         text = self.tokenizer.apply_chat_template(
@@ -255,3 +253,57 @@ class GPTChatbot:
         self.history.append({"role": "assistant", "content": response})
 
         return response
+
+
+def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
+    """Experiment to test if llm's can sort lists"""
+    import itertools
+    import time
+
+    import experiments
+    import polars as pl
+
+    iter = itertools.product(range(1, max_digits + 1), range(1, max_words + 1))
+
+    res = {
+        "number of digits": [],
+        "number of words": [],
+        "success count": [],
+        "fail count": [],
+    }
+
+    logger.info(f"Running experiment with {model}")
+
+    filename = "results/list--" + time.strftime("%y-%m-%d--%H-%M-%S") + ".parquet"
+
+    for number_of_digits, number_of_words in iter:
+        success_count = 0
+        fail_count = 0
+        for _ in range(samples):
+            prompt, expected = experiments.generate_list_prompt(
+                number_of_words, number_of_digits
+            )
+
+            model.reset()
+            response = model(
+                prompt,
+                enable_thinking=False,
+            )
+
+            if experiments.check_response_contains_expected(response, expected):
+                success_count += 1
+            else:
+                fail_count += 1
+
+        res["number of digits"].append(number_of_digits)
+        res["number of words"].append(number_of_words)
+        res["success count"].append(success_count)
+        res["fail count"].append(fail_count)
+
+        dataset = pl.DataFrame(res)
+        # Potential data corruption if program is cancelled during this
+        dataset.write_parquet(filename)
+
+        logger.info(f"Finished {number_of_digits} digits, {number_of_words} words")
+
+    logger.info(dataset)
