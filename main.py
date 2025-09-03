@@ -75,9 +75,9 @@ def list(max_digits: int, max_words: int, samples: int):
 def stuff():
     import experiments
 
-    qwen = experiments.QwenChatbot()
+    gpt = experiments.GPTChatbot()
 
-    print(qwen("Hello"))
+    print(gpt("Hello"))
 
 
 if __name__ == "__main__":
