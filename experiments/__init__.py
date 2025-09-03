@@ -11,6 +11,7 @@ import ast
 import re
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -301,6 +302,7 @@ def list_test(model: Chatbot, max_digits: int, max_words: int, samples: int):
         res["fail count"].append(fail_count)
 
         dataset = pl.DataFrame(res)
+        Path("results").mkdir(parents=True, exist_ok=True)
         # Potential data corruption if program is cancelled during this
         dataset.write_parquet(filename)
 
