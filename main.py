@@ -24,50 +24,107 @@ def list(max_digits: int, max_words: int, samples: int):
     import polars as pl
 
     import gc
+    import torch
 
     logger.info("Loading model")
 
-    qwen = experiments.QwenChatbot()
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-0.6B")
     experiments.list_test(qwen, max_digits, max_words, samples, False)
     del qwen
     gc.collect()
+    torch.cuda.empty_cache()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-1.7B")
+    experiments.list_test(qwen, max_digits, max_words, samples, False)
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-4B")
+    experiments.list_test(qwen, max_digits, max_words, samples, False)
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-8B")
+    experiments.list_test(qwen, max_digits, max_words, samples, False)
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
 
     qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-14B")
     experiments.list_test(qwen, max_digits, max_words, samples, False)
     del qwen
     gc.collect()
+    torch.cuda.empty_cache()
 
-    gpt = experiments.GPTChatbot()
-    experiments.list_test(gpt, max_digits, max_words, samples, False)
-    del gpt
-    gc.collect()
-
-    smol = experiments.SmolChatbot()
-    experiments.list_test(smol, max_digits, max_words, samples, False)
-    del smol
-    gc.collect()
-
-    # ---
-
-    qwen = experiments.QwenChatbot()
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-0.6B")
     experiments.list_test(qwen, max_digits, max_words, samples, True)
     del qwen
     gc.collect()
+    torch.cuda.empty_cache()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-1.7B")
+    experiments.list_test(qwen, max_digits, max_words, samples, True)
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-4B")
+    experiments.list_test(qwen, max_digits, max_words, samples, True)
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-8B")
+    experiments.list_test(qwen, max_digits, max_words, samples, True)
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
 
     qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-14B")
     experiments.list_test(qwen, max_digits, max_words, samples, True)
     del qwen
     gc.collect()
+    torch.cuda.empty_cache()
 
-    gpt = experiments.GPTChatbot()
-    experiments.list_test(gpt, max_digits, max_words, samples, True)
-    del gpt
-    gc.collect()
+    # gpt = experiments.GPTChatbot()
+    # experiments.list_test(gpt, max_digits, max_words, samples, False)
+    # del gpt
+    # gc.collect()
+    # torch.cuda.empty_cache()
 
-    smol = experiments.SmolChatbot()
-    experiments.list_test(smol, max_digits, max_words, samples, True)
-    del smol
-    gc.collect()
+    # smol = experiments.SmolChatbot()
+    # experiments.list_test(smol, max_digits, max_words, samples, False)
+    # del smol
+    # gc.collect()
+    # torch.cuda.empty_cache()
+
+    # # ---
+
+    # qwen = experiments.QwenChatbot()
+    # experiments.list_test(qwen, max_digits, max_words, samples, True)
+    # del qwen
+    # gc.collect()
+    # torch.cuda.empty_cache()
+
+    # qwen = experiments.QwenChatbot(model_name="Qwen/Qwen3-14B")
+    # experiments.list_test(qwen, max_digits, max_words, samples, True)
+    # del qwen
+    # gc.collect()
+    # torch.cuda.empty_cache()
+
+    # gpt = experiments.GPTChatbot()
+    # experiments.list_test(gpt, max_digits, max_words, samples, True)
+    # del gpt
+    # gc.collect()
+    # torch.cuda.empty_cache()
+
+    # smol = experiments.SmolChatbot()
+    # experiments.list_test(smol, max_digits, max_words, samples, True)
+    # del smol
+    # gc.collect()
+    # torch.cuda.empty_cache()
 
 
 @cli.command()
@@ -76,7 +133,9 @@ def stuff():
 
     qwen = experiments.QwenChatbot()
 
-    print(qwen("Hello"))
+    print(qwen("Keep this message for later: abc"))
+
+    print(qwen("What was the previous message?"))
 
 
 if __name__ == "__main__":

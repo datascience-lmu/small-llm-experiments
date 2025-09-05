@@ -109,7 +109,9 @@ class Chatbot(ABC):
             self.history.append({"role": "system", "content": system_prompt})
 
     @abstractmethod
-    def __call__(self, user_input: str, enable_thinking=True) -> str:
+    def __call__(
+        self, user_input: str | list[str], enable_thinking: bool
+    ) -> str | list[str]:
         pass
 
     @abstractmethod
@@ -122,7 +124,10 @@ class SmolChatbot(Chatbot):
         self, model_name: str = "HuggingFaceTB/SmolLM3-3B", system_prompt: str = ""
     ):
         logger.info(f"Loading {model_name}")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            padding_side="left",
+        )
         self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
         self.name = "".join(x for x in model_name if x.isalnum())
         self.history: list[dict[str, str]] = []
@@ -173,7 +178,10 @@ class SmolChatbot(Chatbot):
 class QwenChatbot(Chatbot):
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            padding_side="left",
+        )
         self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
         self.name = "".join(x for x in model_name if x.isalnum())
         self.history: list[dict[str, str]] = []
@@ -182,8 +190,35 @@ class QwenChatbot(Chatbot):
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
 
-    def __call__(self, user_input: str, enable_thinking=True) -> str:
-        messages = self.history + [{"role": "user", "content": user_input}]
+    def split_content(self, response_ids) -> tuple[str, str]:
+        try:
+            # rindex finding 151668 (</think>)
+            split_index = len(response_ids) - response_ids[::-1].index(151668)
+        except ValueError:
+            split_index = 0
+
+        reasoning_content = self.tokenizer.decode(
+            response_ids[:split_index], skip_special_tokens=True
+        ).strip("\n")
+        content = self.tokenizer.decode(
+            response_ids[split_index:], skip_special_tokens=True
+        ).strip("\n")
+
+        return (content, reasoning_content)
+
+    def __call__(
+        self, user_input: str | list[str], enable_thinking=True
+    ) -> str | list[str]:
+        if type(user_input) is list:
+            messages = [
+                self.history + [{"role": "user", "content": inp}] for inp in user_input
+            ]
+
+        elif type(user_input) is str:
+            messages = self.history + [{"role": "user", "content": user_input}]
+
+        else:
+            raise ValueError
 
         text = self.tokenizer.apply_chat_template(
             messages,
@@ -192,30 +227,35 @@ class QwenChatbot(Chatbot):
             enable_thinking=enable_thinking,
         )
 
-        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
-        response_ids = self.model.generate(**inputs, max_new_tokens=32768)[0][
-            len(inputs.input_ids[0]) :
-        ].tolist()
+        inputs = self.tokenizer(
+            text, return_tensors="pt", padding=True, truncation=True
+        ).to(self.model.device)
 
-        try:
-            # rindex finding 151668 (</think>)
-            split_index = len(response_ids) - response_ids[::-1].index(151668)
-        except ValueError:
-            split_index = 0
+        response_ids = self.model.generate(**inputs, max_new_tokens=32768)
 
-        _reasoning_content = self.tokenizer.decode(
-            response_ids[:split_index], skip_special_tokens=True
-        ).strip("\n")
-        content = self.tokenizer.decode(
-            response_ids[split_index:], skip_special_tokens=True
-        ).strip("\n")
+        if type(user_input) is list:
+            generated_texts = []
+            for idx, _output in enumerate(response_ids):
+                content, _reasoning_content = self.split_content(
+                    response_ids[idx][len(inputs.input_ids[idx]) :].tolist()
+                )
 
-        response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+                generated_texts.append(content)
 
-        self.history.append({"role": "user", "content": user_input})
-        self.history.append({"role": "assistant", "content": response})
+            return generated_texts
 
-        return content
+        elif type(user_input) is str:
+            response_ids = response_ids[0][len(inputs.input_ids[0]) :].tolist()
+            content, _reasoning_content = self.split_content(response_ids)
+            response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+
+            self.history.append({"role": "user", "content": user_input})
+            self.history.append({"role": "assistant", "content": response})
+
+            return content
+
+        else:
+            raise ValueError
 
     def __str__(self) -> str:
         return self.name
@@ -224,7 +264,10 @@ class QwenChatbot(Chatbot):
 class GPTChatbot(Chatbot):
     def __init__(self, model_name: str = "openai/gpt-oss-20b", system_prompt: str = ""):
         logger.info(f"Loading {model_name}")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            padding_side="left",
+        )
         self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
         self.name = "".join(x for x in model_name if x.isalnum())
         self.history: list[dict[str, str]] = []
@@ -305,18 +348,37 @@ def list_test(
     for number_of_digits, number_of_words in iter:
         success_count = 0
         fail_count = 0
+
+        questions = []
+        answers = []
         for _ in range(samples):
-            prompt, expected = experiments.generate_list_prompt(
+            question, answer = experiments.generate_list_prompt(
                 number_of_words, number_of_digits
             )
+            questions.append(question)
+            answers.append(answer)
 
-            model.reset()
-            response = model(
-                prompt,
-                enable_thinking=enable_thinking,
-            )
+        # for _ in range(samples):
+        #     prompt, expected = experiments.generate_list_prompt(
+        #         number_of_words, number_of_digits
+        #     )
 
-            if experiments.check_response_contains_expected(response, expected):
+        #     model.reset()
+        #     response = model(
+        #         prompt,
+        #         enable_thinking=enable_thinking,
+        #     )
+
+        #     if experiments.check_response_contains_expected(response, expected):
+        #         success_count += 1
+        #     else:
+        #         fail_count += 1
+
+        model.reset()
+        responses = model(questions, enable_thinking=enable_thinking)
+
+        for response, answer in zip(responses, answers):
+            if experiments.check_response_contains_expected(response, answer):
                 success_count += 1
             else:
                 fail_count += 1
