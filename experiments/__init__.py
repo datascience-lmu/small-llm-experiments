@@ -91,9 +91,12 @@ def extract_list_from_response(response: str) -> list[int] | None:
 
     if len(occurrences) != 0:
         last = occurrences[-1]
-        maybe_list = ast.literal_eval(last)
-        if type(maybe_list) is list:
-            return maybe_list
+        try:
+            maybe_list = ast.literal_eval(last)
+            if type(maybe_list) is list:
+                return maybe_list
+        except:  # noqa: E722
+            return None
 
 
 def check_response_contains_expected(response: str, expected: list[int]) -> bool:
