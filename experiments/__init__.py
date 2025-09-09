@@ -378,6 +378,10 @@ def list_test(
         model.reset()
         responses = model(questions, enable_thinking=enable_thinking)
 
+        gc.collect()
+        torch.cuda.empty_cache()
+
+
         for response, answer in zip(responses, answers):
             if experiments.check_response_contains_expected(response, answer):
                 success_count += 1
