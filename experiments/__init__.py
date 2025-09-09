@@ -1,4 +1,6 @@
 from copy import deepcopy
+import gc
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import itertools
