@@ -1,7 +1,7 @@
 from copy import deepcopy
 import gc
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 import itertools
 import logging
@@ -180,14 +180,34 @@ class SmolChatbot(Chatbot):
 
 
 class QwenChatbot(Chatbot):
-    def __init__(self, model_name: str = "Qwen/Qwen3-0.6B", system_prompt: str = ""):
+    def __init__(
+        self,
+        model_name: str = "Qwen/Qwen3-0.6B",
+        system_prompt: str = "",
+        q4=False,
+        q8=False,
+    ):
         logger.info(f"Loading {model_name}")
+
+        if q4:
+            quantization_config = BitsAndBytesConfig(load_in_4bit=True)
+        elif q8:
+            quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+        else:
+            quantization_config = None
+
+        logger.info(quantization_config)
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             padding_side="left",
         )
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name, device_map="auto", quantization_config=quantization_config
+        )
         self.name = "".join(x for x in model_name if x.isalnum())
+        self.q4 = q4
+        self.q8 = q8
         self.history: list[dict[str, str]] = []
         logger.debug(f"Loaded on device {self.model.device}")
 
@@ -325,7 +345,7 @@ def split_list(list, chunk_size):
 
 
 def list_test(
-    model: Chatbot,
+    model: QwenChatbot,
     max_digits: int,
     max_words: int,
     samples: int,
@@ -346,6 +366,8 @@ def list_test(
 
     res = {
         "thinking": [],
+        "q4": [],
+        "q8": [],
         "number of digits": [],
         "number of words": [],
         "success count": [],
@@ -408,6 +430,8 @@ def list_test(
                 fail_count += 1
 
         res["thinking"].append(enable_thinking)
+        res["q4"].append(model.q4)
+        res["q8"].append(model.q8)
         res["number of digits"].append(number_of_digits)
         res["number of words"].append(number_of_words)
         res["success count"].append(success_count)

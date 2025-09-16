@@ -19,6 +19,8 @@ def cli():
 @click.option("--step-size", default=1)
 @click.option("--thinking", default=False)
 @click.option("--small", default=False)
+@click.option("--q4", default=False)
+@click.option("--q8", default=False)
 def list(
     max_digits: int,
     max_words: int,
@@ -27,6 +29,8 @@ def list(
     step_size: int,
     thinking: bool,
     small: bool,
+    q4: bool,
+    q8: bool,
 ):
     """Experiment to test if llm's can sort lists"""
     import experiments
@@ -41,7 +45,7 @@ def list(
 
     logger.info(f"Loading model {model_name}")
 
-    qwen = experiments.QwenChatbot(model_name=model_name)
+    qwen = experiments.QwenChatbot(model_name=model_name, q4=q4, q8=q8)
     experiments.list_test(
         qwen, max_digits, max_words, samples, batch_size, step_size, thinking
     )
@@ -63,23 +67,34 @@ def noise(samples: int):
 
 
 @cli.command()
-def stuff_a():
+@click.option("--thinking", default=False)
+@click.option("--small", default=False)
+def noise_a(thinking: bool, small: bool):
     import experiments
 
-    # qwen = experiments.QwenChatbot(
-    #     system_prompt='I will send you several messages. After each message only reply with "yes", "no" or "?". If you observe a complete question, only answer with "yes" or "no". If the question is not complete, answer with "?". The question might spread over several messages.'
-    # )
+    qwen = experiments.QwenChatbot(
+        system_prompt='I will send you several messages. After each message only reply with "yes", "no" or "?". If you observe a complete question, only answer with "yes" or "no". If the question is not complete, answer with "?". The question might spread over several messages.'
+    )
 
-    # print(qwen("Is", enable_thinking=False))
-    # print(qwen("Berlin", enable_thinking=False))
-    # print(qwen("a city", enable_thinking=False))
+    print(qwen("Is", enable_thinking=thinking))
+    print(qwen("Berlin", enable_thinking=thinking))
+    print(qwen("a city", enable_thinking=thinking))
 
-    # print(qwen.history)
+    print(qwen.history)
+
+
+@cli.command()
+@click.option("--thinking", default=False)
+@click.option("--small", default=False)
+def noise_b(thinking: bool, small: bool):
+    import experiments
 
     qwen = experiments.QwenChatbot(system_prompt='Only answer with "yes" or "no".')
 
-    print(qwen("Is Berlin a city?", enable_thinking=True))
-    print(qwen("Is Berlin a in France?", enable_thinking=True))
+    print(qwen("Is Berlin a city?", enable_thinking=thinking))
+    print(qwen("Is Berlin a in France?", enable_thinking=thinking))
+
+    print(qwen.history)
 
 
 if __name__ == "__main__":
