@@ -15,6 +15,7 @@ def cli():
 @click.option("--max-digits", default=3)
 @click.option("--max-words", default=20)
 @click.option("--samples", default=20)
+@click.option("--batch-size", default=8)
 @click.option("--step-size", default=1)
 @click.option("--thinking", default=False)
 @click.option("--small", default=False)
@@ -22,6 +23,7 @@ def list(
     max_digits: int,
     max_words: int,
     samples: int,
+    batch_size: int,
     step_size: int,
     thinking: bool,
     small: bool,
@@ -40,7 +42,9 @@ def list(
     logger.info(f"Loading model {model_name}")
 
     qwen = experiments.QwenChatbot(model_name=model_name)
-    experiments.list_test(qwen, max_digits, max_words, samples, step_size, thinking)
+    experiments.list_test(
+        qwen, max_digits, max_words, samples, batch_size, step_size, thinking
+    )
     del qwen
     gc.collect()
     torch.cuda.empty_cache()

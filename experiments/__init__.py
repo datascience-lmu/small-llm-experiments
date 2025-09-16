@@ -320,11 +320,16 @@ class GPTChatbot(Chatbot):
         return self.name
 
 
+def split_list(list, chunk_size):
+    return [list[i : i + chunk_size] for i in range(0, len(list), chunk_size)]
+
+
 def list_test(
     model: Chatbot,
     max_digits: int,
     max_words: int,
     samples: int,
+    batch_size: int,
     step_size: int = 1,
     enable_thinking=False,
 ):
@@ -370,6 +375,8 @@ def list_test(
             questions.append(question)
             answers.append(answer)
 
+        q_chunks = split_list(questions, batch_size)
+
         # for _ in range(samples):
         #     prompt, expected = experiments.generate_list_prompt(
         #         number_of_words, number_of_digits
@@ -386,11 +393,13 @@ def list_test(
         #     else:
         #         fail_count += 1
 
-        model.reset()
-        responses = model(questions, enable_thinking=enable_thinking)
+        responses = []
+        for batch in q_chunks:
+            model.reset()
+            responses.extend(model(batch, enable_thinking=enable_thinking))
 
-        gc.collect()
-        torch.cuda.empty_cache()
+            gc.collect()
+            torch.cuda.empty_cache()
 
         for response, answer in zip(responses, answers):
             if experiments.check_response_contains_expected(response, answer):
