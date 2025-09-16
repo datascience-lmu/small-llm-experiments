@@ -39,6 +39,7 @@ def add_words(input: str, word_length: int = 6) -> str:
     return " ".join(list(itertools.chain.from_iterable(zip(input_split, junk))))
 
 
+# Put message in random place in noise
 def split_across_messages(input: str, noise_length: int = 6) -> list[str]:
     input_split = input.split(" ")
     res = []
@@ -234,6 +235,7 @@ class QwenChatbot(Chatbot):
             text, return_tensors="pt", padding=True, truncation=True
         ).to(self.model.device)
 
+        # Change max token
         response_ids = self.model.generate(**inputs, max_new_tokens=32768)
 
         if type(user_input) is list:
@@ -319,7 +321,12 @@ class GPTChatbot(Chatbot):
 
 
 def list_test(
-    model: Chatbot, max_digits: int, max_words: int, samples: int, enable_thinking=False
+    model: Chatbot,
+    max_digits: int,
+    max_words: int,
+    samples: int,
+    step_size: int = 1,
+    enable_thinking=False,
 ):
     """Experiment to test if llm's can sort lists"""
     import itertools
@@ -328,7 +335,9 @@ def list_test(
     import experiments
     import polars as pl
 
-    iter = itertools.product(range(1, max_digits + 1), range(1, max_words + 1))
+    iter = itertools.product(
+        range(1, max_digits + 1), range(1, max_words + 1, step_size)
+    )
 
     res = {
         "thinking": [],
@@ -383,7 +392,6 @@ def list_test(
         gc.collect()
         torch.cuda.empty_cache()
 
-
         for response, answer in zip(responses, answers):
             if experiments.check_response_contains_expected(response, answer):
                 success_count += 1
@@ -404,3 +412,16 @@ def list_test(
         logger.info(f"Finished {number_of_digits} digits, {number_of_words} words")
 
     logger.info(dataset)
+
+
+def noise_test(
+    model: Chatbot,
+    samples: int,
+    enable_thinking=False,
+):
+    """Experiment to test if llm's can filter out noise"""
+    import itertools
+    import time
+
+    import experiments
+    import polars as pl
