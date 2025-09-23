@@ -55,6 +55,47 @@ def list(
 
 
 @cli.command()
+@click.option("--max-words", default=20)
+@click.option("--samples", default=20)
+@click.option("--batch-size", default=8)
+@click.option("--step-size", default=1)
+@click.option("--thinking", default=False)
+@click.option("--small", default=False)
+@click.option("--q4", default=False)
+@click.option("--q8", default=False)
+def list_increasing(
+    max_words: int,
+    samples: int,
+    batch_size: int,
+    step_size: int,
+    thinking: bool,
+    small: bool,
+    q4: bool,
+    q8: bool,
+):
+    """Experiment to test if llm's can sort lists"""
+    import experiments
+
+    import gc
+    import torch
+
+    if small:
+        model_name = "Qwen/Qwen3-0.6B"
+    else:
+        model_name = "Qwen/Qwen3-14B"
+
+    logger.info(f"Loading model {model_name}")
+
+    qwen = experiments.QwenChatbot(model_name=model_name, q4=q4, q8=q8)
+    experiments.list_test_increasing(
+        qwen, max_words, samples, batch_size, step_size, thinking
+    )
+    del qwen
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
+@cli.command()
 @click.option("--samples", default=20)
 def noise(samples: int):
     import experiments

@@ -78,11 +78,28 @@ def scramble_word(input: str) -> str:
 
 def generate_list_prompt(length: int, digits: int) -> tuple[str, list[int]]:
     unsorted_list = [random.randint(0, 10**digits) for _ in range(length)]
+    random.shuffle(unsorted_list)
 
     sorted_list = deepcopy(unsorted_list)
     sorted_list.sort()
 
-    prompt = "Sort the list " + str(unsorted_list) + " from smallest to largest."
+    prompt = (
+        "Sort the following list: " + str(unsorted_list) + " from smallest to largest."
+    )
+
+    return (prompt, sorted_list)
+
+
+def generate_increasing_list_prompt(length: int) -> tuple[str, list[int]]:
+    unsorted_list = [random.randint(0, 10 ** (i + 1)) for i in range(length)]
+    random.shuffle(unsorted_list)
+
+    sorted_list = deepcopy(unsorted_list)
+    sorted_list.sort()
+
+    prompt = (
+        "Sort the following list: " + str(unsorted_list) + " from smallest to largest."
+    )
 
     return (prompt, sorted_list)
 
@@ -399,22 +416,6 @@ def list_test(
 
         q_chunks = split_list(questions, batch_size)
 
-        # for _ in range(samples):
-        #     prompt, expected = experiments.generate_list_prompt(
-        #         number_of_words, number_of_digits
-        #     )
-
-        #     model.reset()
-        #     response = model(
-        #         prompt,
-        #         enable_thinking=enable_thinking,
-        #     )
-
-        #     if experiments.check_response_contains_expected(response, expected):
-        #         success_count += 1
-        #     else:
-        #         fail_count += 1
-
         responses = []
         for batch in q_chunks:
             model.reset()
@@ -443,6 +444,87 @@ def list_test(
         dataset.write_csv(filename)
 
         logger.info(f"Finished {number_of_digits} digits, {number_of_words} words")
+
+    logger.info(dataset)
+
+
+def list_test_increasing(
+    model: QwenChatbot,
+    max_words: int,
+    samples: int,
+    batch_size: int,
+    step_size: int = 1,
+    enable_thinking=False,
+):
+    """Experiment to test if llm's can sort lists"""
+    import itertools
+    import time
+
+    import experiments
+    import polars as pl
+
+    res = {
+        "thinking": [],
+        "q4": [],
+        "q8": [],
+        "number of digits": [],
+        "number of words": [],
+        "success count": [],
+        "fail count": [],
+    }
+
+    logger.info(f"Running experiment with {model}")
+
+    filename = (
+        "results/list--"
+        + str(model)
+        + "--"
+        + time.strftime("%y-%m-%d--%H-%M-%S")
+        + ".csv"
+    )
+
+    for number_of_words in range(1, max_words + 1, step_size):
+        success_count = 0
+        fail_count = 0
+
+        questions = []
+        answers = []
+        for _ in range(samples):
+            question, answer = experiments.generate_increasing_list_prompt(
+                number_of_words
+            )
+            questions.append(question)
+            answers.append(answer)
+
+        q_chunks = split_list(questions, batch_size)
+
+        responses = []
+        for batch in q_chunks:
+            model.reset()
+            responses.extend(model(batch, enable_thinking=enable_thinking))
+
+            gc.collect()
+            torch.cuda.empty_cache()
+
+        for response, answer in zip(responses, answers):
+            if experiments.check_response_contains_expected(response, answer):
+                success_count += 1
+            else:
+                fail_count += 1
+
+        res["thinking"].append(enable_thinking)
+        res["q4"].append(model.q4)
+        res["q8"].append(model.q8)
+        res["number of words"].append(number_of_words)
+        res["success count"].append(success_count)
+        res["fail count"].append(fail_count)
+
+        dataset = pl.DataFrame(res)
+        Path("results").mkdir(parents=True, exist_ok=True)
+        # Potential data corruption if program is cancelled during this
+        dataset.write_csv(filename)
+
+        logger.info(f"Finished {number_of_words} words")
 
     logger.info(dataset)
 
