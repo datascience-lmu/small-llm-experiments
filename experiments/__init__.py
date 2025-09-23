@@ -467,7 +467,6 @@ def list_test_increasing(
         "thinking": [],
         "q4": [],
         "q8": [],
-        "number of digits": [],
         "number of words": [],
         "success count": [],
         "fail count": [],
