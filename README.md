@@ -18,6 +18,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ```shell
 git clone https://github.com/datascience-lmu/small-llm-experiments.git
+cd small-llm-experiments
 ```
 
 ## Install Python Packages
