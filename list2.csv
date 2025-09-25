@@ -1,0 +1,14 @@
+thinking,q4,q8,number of digits,number of words,success count,fail count
+true,true,false,1,1,16,0
+true,true,false,1,11,16,0
+true,true,false,1,21,16,0
+true,true,false,1,31,14,2
+true,true,false,1,41,14,2
+true,true,false,2,1,16,0
+true,true,false,2,11,16,0
+true,true,false,2,21,16,0
+true,true,false,2,31,15,1
+true,true,false,2,41,16,0
+true,true,false,3,1,16,0
+true,true,false,3,11,16,0
+true,true,false,3,21,16,0
