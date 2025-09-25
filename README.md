@@ -45,3 +45,22 @@ you can run
 ```shell
 uv run main.py list --max-words 50 --samples 8 --batch-size 8 --step-size 10 --thinking false --small true --q4 true
 ```
+
+the resulting data will be placed in the result folder with a format like
+```
+results/experiment--llm_name--date--time.csv
+```
+for example
+```
+results/list--QwenQwen314B--25-09-25--00-04-01.csv
+```
+
+## Slurm
+For the Slurm Workload Manager, create a file called `run.sh` with the following contents
+```bash
+#!/bin/bash
+cd small-llm-experiments
+uv run main.py list --max-digits 4 --max-words 50 --samples 16 --batch-size 1 --step-size 10 --thinking false --small false --q4 true
+uv run main.py list --max-digits 4 --max-words 50 --samples 16 --batch-size 1 --step-size 10 --thinking true --small false --q4 true
+...
+```
