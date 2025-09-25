@@ -35,8 +35,12 @@ uv run main.py
 ```
 
 for example, to run the list sorting experiment with
-- 50 Words
-- 
+- Lists up to length 50 (Words)
+- 8 samples per experiment
+- 8 parallel experiments (batch size)
+- no chain of thought (thinking)
+- large models (Qwen-14B)
+- 4bit quantization
 you can run
 ```shell
 uv run main.py list --max-words 50 --samples 8 --batch-size 8 --step-size 10 --thinking false --small true --q4 true
