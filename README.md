@@ -64,3 +64,8 @@ uv run main.py list --max-digits 4 --max-words 50 --samples 16 --batch-size 1 --
 uv run main.py list --max-digits 4 --max-words 50 --samples 16 --batch-size 1 --step-size 10 --thinking true --small false --q4 true
 ...
 ```
+
+Then schedule the experiment with
+```shell
+sbatch -p malyclst --time=18:00:00 --gres=gpu:1 -C RTX6000 --mem=64000 --cpus-per-task=11 run.sh
+```
