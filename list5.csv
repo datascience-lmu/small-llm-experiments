@@ -1,0 +1,5 @@
+thinking,q4,q8,number of words,success count,fail count
+false,true,false,1,16,0
+false,true,false,11,6,10
+false,true,false,21,0,16
+false,true,false,31,0,16
