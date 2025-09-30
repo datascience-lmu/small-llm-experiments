@@ -138,5 +138,24 @@ def noise_b(thinking: bool, small: bool):
     print(qwen.history)
 
 
+@cli.command()
+@click.option("--max-words", default=20)
+def markov(max_words: int):
+    import experiments
+
+    qwen = experiments.QwenChatbot(
+        system_prompt='Only respond with the letters "a" or "b". Do not use any other letters.'
+    )
+
+    string = qwen(
+        f'Generate a random sequence of "a"s or "b"s of length {max_words}.',
+        enable_thinking=False,
+    )
+    string = "".join(x for x in string if x == "a" or x == "b")
+
+    experiments.test_markov_prop(string, 1, 0.2)
+
+
+
 if __name__ == "__main__":
     cli()

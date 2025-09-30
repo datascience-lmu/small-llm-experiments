@@ -10,6 +10,8 @@ import string
 import ast
 import re
 
+import numpy as np
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -539,3 +541,59 @@ def noise_test(
 
     import experiments
     import polars as pl
+
+
+def count_frequencies(string: str, context_len: int) -> dict[tuple[str, str], float]:
+    frequencies: dict[tuple[str, str], float] = dict()
+    for i in range(len(string) - context_len):
+        context = string[i : i + context_len]
+        token = string[i + context_len]
+        key = (context, token)
+        if key in frequencies:
+            frequencies[key] += 1.0
+        else:
+            frequencies[key] = 1.0
+
+    return frequencies
+
+
+def normalize_rows(a: np.typing.NDArray[np.float64]) -> np.typing.NDArray[np.float64]:
+    return a / a.sum(axis=1, keepdims=True)
+
+
+def transition_matrix(
+    keys: list[str],
+    counts: dict[tuple[str, str], float],
+) -> np.typing.NDArray[np.float64]:
+    token = sorted(list(set(map(lambda i: i[1], counts.keys()))))
+    n = len(keys)
+    m = len(token)
+    matrix = np.zeros([n, m])
+
+    for (context, tk), value in counts.items():
+        i = keys.index(context)
+        j = token.index(tk)
+        matrix[i, j] = value
+
+    return normalize_rows(matrix)
+
+
+def test_markov_prop(
+    string: str, context_len: int, split_percentage: float = 0.2
+) -> tuple[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]]:
+    split_index = int(len(string) * split_percentage)
+    first_string = string[0:split_index]
+    second_string = string[split_index : len(string)]
+
+    first_counts = count_frequencies(first_string, context_len)
+    second_counts = count_frequencies(second_string, context_len)
+
+    keys = set()
+    keys.update(list(set(map(lambda i: i[0], first_counts.keys()))))
+    keys.update(list(set(map(lambda i: i[0], second_counts.keys()))))
+    keys = sorted(list(keys))
+
+    a = transition_matrix(keys, first_counts)
+    b = transition_matrix(keys, second_counts)
+
+    return (a, b)
